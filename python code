@@ -1,0 +1,89 @@
+import serial
+import math
+import pygame
+from pygame.locals import *
+
+# Initialize Pygame
+pygame.init()
+
+# Set up the Pygame window
+WINDOW_SIZE = (700, 700)
+screen = pygame.display.set_mode(WINDOW_SIZE)
+pygame.display.set_caption("Ultrasonic Sensor Radar")
+
+# Define colors
+BLACK = (0, 0, 0)
+WHITE = (255, 255, 255)
+GREEN = (0, 255, 0)
+RED = (255, 0, 0)
+
+# Define font
+font = pygame.font.SysFont(None, 30)
+
+# Define the center of the screen
+center = (WINDOW_SIZE[0] // 2, WINDOW_SIZE[1] // 2)
+
+# Define the maximum distance that can be measured
+MAX_DISTANCE = 200
+
+# Define the angle intervals for the three sensors
+angle1 = 60
+angle2 = 0
+angle3 = -60
+
+# Set up the serial connection to the Arduino
+ser = serial.Serial('COM4', 9600)
+
+# Main loop
+running = True
+while running:
+    # Read the distances from the Arduino
+    distances = ser.readline().decode().strip().split(',')
+    if len(distances) != 3:
+        continue
+    distance1, distance2, distance3 = [int(d) for d in distances]
+
+    # Convert the distances to positions on the screen
+    if distance1 <= MAX_DISTANCE:
+        x1 = int(center[0] - distance1 * math.sin(math.radians(angle1)))
+        y1 = int(center[1] - distance1 * math.cos(math.radians(angle1)))
+    else:
+        x1, y1 = None, None
+
+    if distance2 <= MAX_DISTANCE:
+        x2 = int(center[0] - distance2 * math.sin(math.radians(angle3)))
+        y2 = int(center[1] - distance2 * math.cos(math.radians(angle3)))
+    else:
+        x2, y2 = None, None
+
+    if distance3 <= MAX_DISTANCE:
+        x3 = int(center[0] - distance3 * math.sin(math.radians(angle2)))
+        y3 = int(center[1] - distance3 * math.cos(math.radians(angle2)))
+    else:
+        x3, y3 = None, None
+
+    # Draw the radar-like GUI
+    screen.fill(BLACK)
+    pygame.draw.circle(screen, WHITE , center, 5)
+    pygame.draw.circle(screen, GREEN , center, MAX_DISTANCE, 1)
+
+    if x1 is not None and y1 is not None:
+        pygame.draw.circle(screen, RED, (x1, y1), 5)
+
+    if x2 is not None and y2 is not None:
+        pygame.draw.circle(screen, RED, (x2, y2), 5)
+
+    if x3 is not None and y3 is not None:
+        pygame.draw.circle(screen, RED , (x3, y3), 5)
+
+    # Update the Pygame display
+    pygame.display.update()
+
+    # Check for Pygame events
+    for event in pygame.event.get():
+        if event.type == QUIT:
+            running = False
+            break
+
+# Clean up the Pygame window
+pygame.quit()
